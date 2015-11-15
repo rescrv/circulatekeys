@@ -1,0 +1,21 @@
+#!/bin/sh
+
+set -e
+
+source "${HOME}/.ssh/circulatekeys.rc"
+
+URL="http://rescrv.net/circulated_keys.sig"
+
+TMPDIR=`mktemp -d -p "${HOME}" -t .circulatekeys.XXXXXXX`
+trap 'rm -r "${TMPDIR}"' EXIT
+
+cd "${TMPDIR}"
+wget -q "${URL}"
+signify -V -q -e -p "${KEY}" -x circulated_keys.sig -m circulated_keys || exit 1
+touch "${AUTHORIZED_KEYS}"
+cp "${AUTHORIZED_KEYS}" .
+sed -i -e '/^# begin circulatedkeys$/,/^# end circulatedkeys$/d' authorized_keys
+echo '# begin circulatedkeys' >> authorized_keys
+cat circulated_keys >> authorized_keys
+echo '# end circulatedkeys' >> authorized_keys
+mv authorized_keys "${AUTHORIZED_KEYS}"
